@@ -1,0 +1,87 @@
+@import url("https://fonts.googleapis.com/css?family=Inclusive+Sans:400|Albert+Sans:700");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "LINE Seed Sans TH-Regular";
+  src: url("https://anima-uploads.s3.amazonaws.com/projects/64e6ee2e25081e8f2cfc6c90/fonts/lineseedsansth_rg.otf") format("opentype");
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+@layer utilities {
+  .container {
+    @apply px-8 sm:px-12 max-w-[1400px] lg:m-auto;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family:"LINE Seed Sans TH-Regular";
+}
+
+@layer base { img {display: initial;}}
+
+.animate-class {
+  opacity: 0;
+  transform: scale(0.9) translateY(50px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.show {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition-delay: 0.2s;
+}
+.delay-1 {
+  transition-delay: 0.1s;
+}
+
+.delay-2 {
+  transition-delay: 0.2s;
+}
+
+.delay-3 {
+  transition-delay: 0.3s;
+}
+
+.delay-4 {
+  transition-delay: 0.4s;
+}
+
+.delay-5 {
+  transition-delay: 0.5s;
+}
+
+.delay-6 {
+  transition-delay: 0.6s;
+}
+
+.delay-7 {
+  transition-delay: 0.7s;
+}
+
+.delay-8 {
+  transition-delay: 0.8s;
+}
+
+.delay-9 {
+  transition-delay: 0.9s;
+}
+
+.delay-10 {
+  transition-delay: 1s;
+}
