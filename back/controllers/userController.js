@@ -98,6 +98,29 @@ const deleteUserByHn = async (req, res) => {
     }
 };
 
+const checkDuplicateUser = async (req, res) => {
+    const { hn, email, phone } = req.body;
+
+    try {
+        // ตรวจสอบว่ามีค่า hn, email และ phone ซ้ำในฐานข้อมูลหรือไม่
+        const [hnExists, emailExists, phoneExists] = await Promise.all([
+            User.exists({ hn }), 
+            User.exists({ email }), 
+            User.exists({ phone })
+        ]);
+
+        // ส่งผลลัพธ์กลับไปยังฝั่ง client
+        res.status(200).json({ 
+            hnExists: !!hnExists, 
+            emailExists: !!emailExists, 
+            phoneExists: !!phoneExists 
+        });
+
+    } catch (error) {
+        console.error('Error checking duplicates:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
 
 module.exports = {
     getAllUsers,
@@ -107,5 +130,6 @@ module.exports = {
     deleteUser,
     getUserByHn,
     updateUserByHn,
-    deleteUserByHn
+    deleteUserByHn,
+    checkDuplicateUser
 };

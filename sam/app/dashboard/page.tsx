@@ -16,6 +16,7 @@ const Dashboard: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [newUser, setNewUser] = useState<User | null>(null); // สำหรับ New User
     const [editUser, setEditUser] = useState<{ firstName: string, lastName: string, hn: string, phone: string, email: string } | null>(null);
     const itemsPerPage = 10;
 
@@ -75,6 +76,14 @@ const Dashboard: React.FC = () => {
         console.log("Edit user:", user);
     };
 
+    const handleNewUserClick = () => {
+        setNewUser({ hn: "", name: "", phone: "", email: "" });
+    };
+
+    const handleNewUserChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setNewUser((prev) => ({ ...prev!, [name]: value }));
+    };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -82,6 +91,77 @@ const Dashboard: React.FC = () => {
             ...prev!,
             [name]: value, // Ensure we are updating the correct field
         }));
+    };
+
+    const handleNewUserSave = async () => {
+        if (newUser) {
+            const { hn, name, phone, email } = newUser;
+    
+            // Validation checks
+            if (!hn || !/^\d{5}$/.test(hn)) {
+                alert('HN must be exactly 5 numbers.');
+                return;
+            }
+            if (!name || name.trim() === '') {
+                alert('Name cannot be empty.');
+                return;
+            }
+            if (!phone || !/^\d{10,13}$/.test(phone)) {
+                alert('Phone must be 10 to 13 digits.');
+                return;
+            }
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                alert('Email must contain "@" and "." in a valid format.');
+                return;
+            }
+    
+            try {
+                const checkResponse = await fetch('http://localhost:3001/api/users/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hn, email, phone }),
+                });
+    
+                if (!checkResponse.ok) throw new Error('Error checking user duplicates');
+                
+                const { hnExists, emailExists, phoneExists } = await checkResponse.json();
+    
+                if (hnExists) {
+                    alert('HN already exists.');
+                    return;
+                }
+                if (emailExists) {
+                    alert('Email already exists.');
+                    return;
+                }
+                if (phoneExists) {
+                    alert('Phone already exists.');
+                    return;
+                }
+    
+                // If all checks pass, create the new user
+                const response = await fetch('http://localhost:3001/api/users/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newUser),
+                });
+    
+                if (!response.ok) throw new Error('Error adding new user');
+    
+                const addedUser = await response.json();
+                setData((prevData) => [...prevData, addedUser]); // Add new user to the table
+                alert('User added successfully!');
+                setNewUser(null); // Close the modal
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error adding new user. Please try again.');
+            }
+        }
+    };
+    
+
+    const cancelNewUser = () => {
+        setNewUser(null);
     };
 
     const handleSave = async () => {
@@ -201,10 +281,12 @@ const Dashboard: React.FC = () => {
                         className="border border-[#F7770F] rounded px-4 py-2 w-1/2 focus:outline-none"
                     />
                 </div>
-
+                <div className='flex justify-end mb-4'>
+                    <button onClick={handleNewUserClick} className='bg-green-400 xl:p-2 p-1 rounded-full'>New</button>
+                </div>
                 <table className="table-auto w-full border border-[#F7770F]">
                     <thead>
-                        <tr className="bg-[#F7770F] text-left text-white text-sm 2xl:text-lg  ">
+                        <tr className="bg-[#F7770F] text-left text-white text-[9px] xl:text-[16px] 2xl:text-lg  ">
                             <th className="px-4 py-2 border-orange-900">HN</th>
                             <th className="px-4 py-2 border-orange-900 ">Name</th>
                             <th className="px-4 py-2 border-orange-900">Phone</th>
@@ -215,7 +297,7 @@ const Dashboard: React.FC = () => {
                     <tbody>
                         {currentData.length > 0 ? (
                             currentData.map((row, index) => (
-                                <tr key={row.hn || index} className="hover:bg-orange-200 border-[#F7770F] text-sm 2xl:text-lg ">
+                                <tr key={row.hn || index} className="hover:bg-orange-200 border-[#F7770F] text-[9px] xl:text-[16px] 2xl:text-lg ">
                                     <td className="px-4 py-2 border-[#F7770F]">{row.hn}</td>
                                     <td className="px-4 py-2 border-[#F7770F] ">{row.name}</td>
                                     <td className="px-4 py-2 border-[#F7770F]">{row.phone}</td>
@@ -254,7 +336,72 @@ const Dashboard: React.FC = () => {
                     </button>
                 </div>
             </div>
+            {/* Modal for New User */}
+            {newUser && (
+                <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex justify-center items-center">
+                    <div className="bg-white p-6 rounded-lg w-[400px]">
+                        <h2 className="text-xl font-bold mb-4">Add New User</h2>
 
+                        <div>
+                            <label className="block">HN</label>
+                            <input
+                                type="text"
+                                name="hn"
+                                className="w-full px-4 py-2 border mb-4"
+                                value={newUser.hn}
+                                onChange={handleNewUserChange}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block">Name</label>
+                            <input
+                                type="text"
+                                name="name"
+                                className="w-full px-4 py-2 border mb-4"
+                                value={newUser.name}
+                                onChange={handleNewUserChange}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block">Phone</label>
+                            <input
+                                type="text"
+                                name="phone"
+                                className="w-full px-4 py-2 border mb-4"
+                                value={newUser.phone}
+                                onChange={handleNewUserChange}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block">Email</label>
+                            <input
+                                type="email"
+                                name="email"
+                                className="w-full px-4 py-2 border mb-4"
+                                value={newUser.email}
+                                onChange={handleNewUserChange}
+                            />
+                        </div>
+
+                        <div className="flex justify-between">
+                            <button
+                                onClick={cancelNewUser}
+                                className="px-4 py-2 bg-gray-300 rounded">
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={handleNewUserSave}
+                                className="px-4 py-2 bg-green-500 text-white rounded">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {editUser && (
                 <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex justify-center items-center text-black">
                     <div className="bg-white p-6 rounded-lg w-[400px]">

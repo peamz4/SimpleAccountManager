@@ -19,4 +19,6 @@ router.put('/updatehn/:hn', userController.updateUserByHn);
 
 router.delete('/deletehn/:hn', userController.deleteUserByHn);
 
+router.post('/check', userController.checkDuplicateUser);
+
 module.exports = router;
