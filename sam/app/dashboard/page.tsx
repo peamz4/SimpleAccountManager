@@ -8,18 +8,23 @@ const Dashboard: React.FC = () => {
         name: string;
         phone: string;
         email: string;
+        firstName?: string;
+        lastName?: string;
     }
 
     const [data, setData] = useState<User[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [editUser, setEditUser] = useState<{ firstName: string, lastName: string, hn: string, phone: string, email: string } | null>(null);
     const itemsPerPage = 10;
+
+    const [newUserData, setNewUserData] = useState<User | null>(null);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             setIsLoading(false);
-        }, 1000);
+        }, 1500);
         return () => clearTimeout(timer);
     }, []);
 
@@ -41,19 +46,11 @@ const Dashboard: React.FC = () => {
         fetchData();
     }, []);
 
-    // Animate elements on mount
-    useEffect(() => {
-        const elements = document.querySelectorAll(".animate-class");
-        elements.forEach((el) => {
-            el.classList.add("show");
-        });
-    }, [data]);
-
     const totalPages = Math.ceil(data.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
 
     // Filter data based on search term
-    const filteredData = data.filter((user) => 
+    const filteredData = data.filter((user) =>
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.hn.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -66,6 +63,102 @@ const Dashboard: React.FC = () => {
         if (page >= 1 && page <= totalPages) {
             setCurrentPage(page);
         }
+    };
+
+    const handleEdit = (user: User) => {
+        const [firstName, lastName] = user.name.split(" "); // แยกชื่อและนามสกุล
+        setEditUser({
+            ...user,
+            firstName: firstName || "", // ตั้งค่าให้กับ state ใหม่
+            lastName: lastName || "",
+        });
+        console.log("Edit user:", user);
+    };
+
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setEditUser((prev) => ({
+            ...prev!,
+            [name]: value, // Ensure we are updating the correct field
+        }));
+    };
+
+    const handleSave = async () => {
+        if (editUser) {
+            // Phone number validation (only digits, between 10 and 13 characters)
+            const phoneRegex = /^[0-9]{10,13}$/;
+            if (!phoneRegex.test(editUser.phone)) {
+                alert("Phone number must be between 10 and 13 digits.");
+                return;
+            }
+
+            // Email validation (contains "@" and ".")
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(editUser.email)) {
+                alert("Please enter a valid email address.");
+                return;
+            }
+
+            try {
+                console.log("Saving user:", editUser);  // Add a log to ensure the function is called
+                const response = await fetch(`http://localhost:3001/api/users/updatehn/${editUser.hn}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: `${editUser.firstName} ${editUser.lastName}`,
+                        phone: editUser.phone,
+                        email: editUser.email,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error updating user: ${response.status}`);
+                }
+
+                const updatedUser = await response.json();
+
+                setData((prevData) =>
+                    prevData.map((user) =>
+                        user.hn === updatedUser.hn ? updatedUser : user
+                    )
+                );
+                alert("User updated successfully!");
+                window.location.reload();
+                setEditUser(null);  // Close the modal after saving
+            } catch (error) {
+                console.error("Error saving changes:", error);
+            }
+        }
+    };
+
+
+    const handleDelete = async (hn: string) => {
+        const confirmed = window.confirm("Are you sure you want to delete this user?");
+        if (confirmed) {
+            try {
+                // ส่งคำขอลบข้อมูลไปยัง API
+                const response = await fetch(`http://localhost:3001/api/users/deletehn/${hn}`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete the user');
+                }
+
+                // ถ้าการลบสำเร็จ ให้รีเฟรชข้อมูล
+                setData((prevData) => prevData.filter(user => user.hn !== hn));
+                alert("User deleted successfully.");
+            } catch (error) {
+                console.error("Error deleting user:", error);
+                alert("Error deleting user. Please try again later.");
+            }
+        }
+    };
+    const cancelEdit = () => {
+        setEditUser(null);
     };
 
     if (isLoading) {
@@ -81,7 +174,7 @@ const Dashboard: React.FC = () => {
     return (
         <div className='flex w-screen h-screen items-center justify-center flex-col text-black relative'>
             <div className='absolute top-0 left-0 p-4'>
-                <button onClick={() => window.location.href = '/'}>back to home</button>
+                <button onClick={() => window.location.href = '/'} className='underline'>&lt;&lt; back to home</button>
             </div>
             <div className="background absolute inset-0 -z-10">
                 <style jsx>{`
@@ -92,45 +185,46 @@ const Dashboard: React.FC = () => {
                     }
                 `}</style>
             </div>
-            
+
             <div className="container mx-auto p-4">
                 <div className='flex justify-center mb-4'>
                     <h1 className='text-[#F7770F] font-semibold text-4xl'>User Dashboard</h1>
                 </div>
-                
+
                 {/* Search Bar */}
                 <div className="flex justify-center mb-6">
-                    <input 
-                        type="text" 
-                        placeholder="Search users..." 
-                        value={searchTerm} 
-                        onChange={(e) => setSearchTerm(e.target.value)} 
+                    <input
+                        type="text"
+                        placeholder="Search users..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         className="border border-[#F7770F] rounded px-4 py-2 w-1/2 focus:outline-none"
                     />
                 </div>
 
                 <table className="table-auto w-full border border-[#F7770F]">
                     <thead>
-                        <tr className="bg-[#F7770F] text-left text-white">
+                        <tr className="bg-[#F7770F] text-left text-white text-sm 2xl:text-lg  ">
                             <th className="px-4 py-2 border-orange-900">HN</th>
-                            <th className="px-4 py-2 border-orange-900">Name</th>
+                            <th className="px-4 py-2 border-orange-900 ">Name</th>
                             <th className="px-4 py-2 border-orange-900">Phone</th>
-                            <th className="px-4 py-2 border-orange-900">Email</th>
+                            <th className="px-4 py-2 border-orange-900 sm:block hidden">Email</th>
                             <th className="px-4 py-2 border-orange-900 text-center">Operation</th>
                         </tr>
                     </thead>
                     <tbody>
                         {currentData.length > 0 ? (
                             currentData.map((row, index) => (
-                                <tr key={row.hn || index} className="hover:bg-orange-200 border-[#F7770F]">
+                                <tr key={row.hn || index} className="hover:bg-orange-200 border-[#F7770F] text-sm 2xl:text-lg ">
                                     <td className="px-4 py-2 border-[#F7770F]">{row.hn}</td>
-                                    <td className="px-4 py-2 border-[#F7770F]">{row.name}</td>
+                                    <td className="px-4 py-2 border-[#F7770F] ">{row.name}</td>
                                     <td className="px-4 py-2 border-[#F7770F]">{row.phone}</td>
-                                    <td className="px-4 py-2 border-[#F7770F]">{row.email}</td>
+                                    <td className="px-4 py-2 border-[#F7770F] sm:block hidden">{row.email}</td>
                                     <td className="px-4 py-2 border-[#F7770F] text-center">
-                                        <button className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600">
-                                            View
+                                        <button onClick={() => handleEdit(row)} className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 mr-2">
+                                            Edit
                                         </button>
+
                                     </td>
                                 </tr>
                             ))
@@ -143,23 +237,107 @@ const Dashboard: React.FC = () => {
                 </table>
 
                 <div className="flex justify-center mt-4">
-                    <button 
-                        onClick={() => handlePageChange(currentPage - 1)} 
-                        disabled={currentPage === 1} 
+                    <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
                         className="px-4 py-2 bg-[#F7770F] text-black rounded disabled:opacity-50 mr-2"
                     >
-                        Previous
+                        &lt;&lt;
                     </button>
                     <span className="px-4 py-2">Page {currentPage} of {totalPages}</span>
-                    <button 
-                        onClick={() => handlePageChange(currentPage + 1)} 
-                        disabled={currentPage === totalPages} 
+                    <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
                         className="px-4 py-2 bg-[#F7770F] text-black rounded disabled:opacity-50 ml-2"
                     >
-                        Next
+                        &gt;&gt;
                     </button>
                 </div>
             </div>
+
+            {editUser && (
+                <div className="fixed inset-0 bg-gray-800 bg-opacity-80 flex justify-center items-center text-black">
+                    <div className="bg-white p-6 rounded-lg w-[400px]">
+                        <h2 className="text-xl font-bold mb-4">Edit User</h2>
+                        <div className="flex justify-items-start mb-2">
+                            <div className="flex justify-items-start gap-1 bg-orange-400 px-2 py-1 rounded-xl">
+                                <label className="block">HN :</label>
+                                <h1>{editUser?.hn || ""}</h1>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block mb-2">First Name</label>
+                            <input
+                                type="text"
+                                name="firstName"
+                                className="w-full px-4 py-2 mb-4 border"
+                                value={editUser?.firstName || ""}
+                                onChange={handleInputChange} // Bind to handleInputChange
+                            />
+                        </div>
+                        <div>
+                            <label className="block mb-2">Last Name</label>
+                            <input
+                                type="text"
+                                name="lastName"
+                                className="w-full px-4 py-2 mb-4 border"
+                                value={editUser?.lastName || ""}
+                                onChange={handleInputChange} // Bind to handleInputChange
+                            />
+                        </div>
+                        <div>
+                            <label className="block mb-2">Phone</label>
+                            <input
+                                type="text"
+                                name="phone"
+                                className="w-full px-4 py-2 mb-4 border"
+                                value={editUser?.phone || ""}
+                                onChange={handleInputChange} // Bind to handleInputChange
+                            />
+                        </div>
+                        <div>
+                            <label className="block mb-2">Email</label>
+                            <input
+                                type="email"
+                                name="email"
+                                className="w-full px-4 py-2 mb-4 border"
+                                value={editUser?.email || ""}
+                                onChange={handleInputChange} // Bind to handleInputChange
+                            />
+                        </div>
+                        <div className="flex justify-between px-2">
+                            {/* Delete button on the left */}
+                            <div className="flex items-center">
+                                <button
+                                    onClick={() => handleDelete(editUser.hn)}
+                                    className="bg-red-500 text-white px-2 py-2 rounded hover:bg-red-600"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+
+                            {/* Cancel and Save buttons on the right */}
+                            <div className="flex gap-2 items-center">
+                                <button
+                                    className="px-2 py-2 bg-gray-300 rounded"
+                                    onClick={cancelEdit}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className="px-2 py-2 bg-green-500 hover:bg-primaryDark text-white rounded"
+                                    onClick={handleSave} // Trigger save changes
+                                >
+                                    Save
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            )}
+
+
         </div>
     );
 };

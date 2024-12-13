@@ -60,10 +60,57 @@ const deleteUser = async (req, res) => {
     }
 };
 
+const getUserByHn = async (req, res) => {
+    try {
+        const user = await User.findOne({ hn: req.params.hn }); // ค้นหาผู้ใช้โดยใช้ hn
+        if (!user) {
+            return res.status(404).send(); // ถ้าไม่พบผู้ใช้
+        }
+        res.status(200).send(user); // ส่งข้อมูลผู้ใช้
+    } catch (error) {
+        res.status(500).send(error); // ถ้ามีข้อผิดพลาด
+    }
+};
+
+const updateUserByHn = async (req, res) => {
+    try {
+        const user = await User.findOneAndUpdate({ hn: req.params.hn }, req.body, {
+            new: true, // ส่งข้อมูลล่าสุดหลังจากการอัพเดต
+            runValidators: true, // ตรวจสอบการ validate ข้อมูลใหม่
+        });
+
+        if (!user) {
+            return res.status(404).send(); // หากไม่พบผู้ใช้
+        }
+
+        res.status(200).send(user); // ส่งข้อมูลที่ถูกอัพเดต
+    } catch (error) {
+        res.status(400).send(error); // หากมีข้อผิดพลาด
+    }
+};
+
+const deleteUserByHn = async (req, res) => {
+    try {
+        const user = await User.findOneAndDelete({ hn: req.params.hn });
+
+        if (!user) {
+            return res.status(404).send(); // หากไม่พบผู้ใช้
+        }
+
+        res.status(200).send({ message: 'User deleted successfully' }); // ส่งข้อความยืนยันการลบ
+    } catch (error) {
+        res.status(500).send(error); // หากมีข้อผิดพลาด
+    }
+};
+
+
 module.exports = {
     getAllUsers,
     getUserById,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    getUserByHn,
+    updateUserByHn,
+    deleteUserByHn
 };
