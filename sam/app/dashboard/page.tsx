@@ -231,6 +231,7 @@ const Dashboard: React.FC = () => {
                 // ถ้าการลบสำเร็จ ให้รีเฟรชข้อมูล
                 setData((prevData) => prevData.filter(user => user.hn !== hn));
                 alert("User deleted successfully.");
+                window.location.reload();
             } catch (error) {
                 console.error("Error deleting user:", error);
                 alert("Error deleting user. Please try again later.");
