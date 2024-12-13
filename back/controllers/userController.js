@@ -1,6 +1,5 @@
 const User = require('../models/userModel');
 
-// Create a new user
 const createUser = async (req, res) => {
     try {
         const user = new User(req.body);
@@ -11,7 +10,6 @@ const createUser = async (req, res) => {
     }
 };
 
-// Get all users
 const getAllUsers = async (req, res) => {
     try {
         const users = await User.find({});
@@ -21,7 +19,6 @@ const getAllUsers = async (req, res) => {
     }
 };
 
-// Get a user by ID
 const getUserById = async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
@@ -34,7 +31,6 @@ const getUserById = async (req, res) => {
     }
 };
 
-// Update a user by ID
 const updateUser = async (req, res) => {
     try {
         const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
@@ -47,7 +43,6 @@ const updateUser = async (req, res) => {
     }
 };
 
-// Delete a user by ID
 const deleteUser = async (req, res) => {
     try {
         const user = await User.findByIdAndDelete(req.params.id);
@@ -62,30 +57,30 @@ const deleteUser = async (req, res) => {
 
 const getUserByHn = async (req, res) => {
     try {
-        const user = await User.findOne({ hn: req.params.hn }); // ค้นหาผู้ใช้โดยใช้ hn
+        const user = await User.findOne({ hn: req.params.hn }); 
         if (!user) {
-            return res.status(404).send(); // ถ้าไม่พบผู้ใช้
+            return res.status(404).send();
         }
-        res.status(200).send(user); // ส่งข้อมูลผู้ใช้
+        res.status(200).send(user);
     } catch (error) {
-        res.status(500).send(error); // ถ้ามีข้อผิดพลาด
+        res.status(500).send(error); 
     }
 };
 
 const updateUserByHn = async (req, res) => {
     try {
         const user = await User.findOneAndUpdate({ hn: req.params.hn }, req.body, {
-            new: true, // ส่งข้อมูลล่าสุดหลังจากการอัพเดต
-            runValidators: true, // ตรวจสอบการ validate ข้อมูลใหม่
+            new: true, 
+            runValidators: true,
         });
 
         if (!user) {
-            return res.status(404).send(); // หากไม่พบผู้ใช้
+            return res.status(404).send(); 
         }
 
-        res.status(200).send(user); // ส่งข้อมูลที่ถูกอัพเดต
+        res.status(200).send(user); 
     } catch (error) {
-        res.status(400).send(error); // หากมีข้อผิดพลาด
+        res.status(400).send(error);
     }
 };
 
@@ -94,12 +89,12 @@ const deleteUserByHn = async (req, res) => {
         const user = await User.findOneAndDelete({ hn: req.params.hn });
 
         if (!user) {
-            return res.status(404).send(); // หากไม่พบผู้ใช้
+            return res.status(404).send();
         }
 
-        res.status(200).send({ message: 'User deleted successfully' }); // ส่งข้อความยืนยันการลบ
+        res.status(200).send({ message: 'User deleted successfully' }); 
     } catch (error) {
-        res.status(500).send(error); // หากมีข้อผิดพลาด
+        res.status(500).send(error); 
     }
 };
 
